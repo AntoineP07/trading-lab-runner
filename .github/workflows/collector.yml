@@ -47,3 +47,5 @@ jobs:
         run: python -m collector.run bars --workers 3
       - name: Libération des données anciennes
         run: python -m collector.run release
+      - name: Export du panel pour les agents
+        run: python -m collector.run export-panel
