@@ -45,7 +45,16 @@ jobs:
           ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
           ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
         run: python -m collector.run bars --workers 3
+      - name: Prix ajustés après splits (rafraîchir puis réparer)
+        env:
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+        run: |
+          python -m collector.run refresh-adjusted
+          python -m collector.run repair
       - name: Libération des données anciennes
         run: python -m collector.run release
       - name: Export du panel pour les agents
         run: python -m collector.run export-panel
+      - name: Contrôle qualité du panel
+        run: python -m collector.run check-panel
