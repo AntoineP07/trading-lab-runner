@@ -3,13 +3,13 @@ name: agent
 # Lance un agent Claude (abonnement, via CLAUDE_CODE_OAUTH_TOKEN) qui clone le dépôt privé, travaille
 # une session, puis pousse ses commits APRÈS contrôle du garde-fou.
 #
-# CADENCE (UTC) : 7 sessions par jour. Pour réduire la consommation, supprime des lignes ;
+# CADENCE (UTC) : 13 sessions par jour. Pour réduire la consommation, supprime des lignes ;
 # pour tout arrêter, crée un fichier STOP à la racine du dépôt privé.
 on:
   schedule:
-    - cron: "17 1,7,13,19 * * *"   # explorateur, 4 fois par jour
-    - cron: "41 15 * * *"          # sceptique, 1 fois par jour
-    - cron: "23 21 * * *"          # bibliothécaire, 1 fois par jour
+    - cron: "17 */3 * * *"         # explorateur, 8 fois par jour
+    - cron: "41 9,21 * * *"        # sceptique, 2 fois par jour
+    - cron: "23 12,23 * * *"       # bibliothécaire, 2 fois par jour
     - cron: "53 5 * * *"           # ingénieur, 1 fois par jour
   workflow_dispatch:
     inputs:
@@ -48,8 +48,8 @@ jobs:
           SCHEDULE: ${{ github.event.schedule }}
         run: |
           case "$SCHEDULE" in
-            "41 15 * * *") ROLE=skeptic ;;
-            "23 21 * * *") ROLE=librarian ;;
+            "41 9,21 * * *") ROLE=skeptic ;;
+            "23 12,23 * * *") ROLE=librarian ;;
             "53 5 * * *") ROLE=engineer ;;
             *) ROLE="${INPUT_ROLE:-explorer}" ;;
           esac
