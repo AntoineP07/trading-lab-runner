@@ -29,9 +29,8 @@ permissions:
 
 jobs:
   session:
-    # EN PAUSE (demande de PINTO) : le cron est ignoré, seul un lancement manuel passe.
-    # Pour reprendre : remettre « vars.AGENTS_ENABLED == 'true' || » devant la condition.
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    # Le cron ne tourne que si la variable AGENTS_ENABLED vaut « true » ; un lancement manuel passe toujours.
+    if: ${{ vars.AGENTS_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
