@@ -98,8 +98,12 @@ jobs:
           ROLE: ${{ steps.ctx.outputs.role }}
         run: |
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/AntoineP07/trading-lab.git"
+          # Le script de push (et le garde-fou qu'il appelle) vient d'origin/main, jamais de l'arbre de
+          # travail : la session peut modifier son checkout, pas les règles qui la contrôlent.
+          git fetch -q origin main
+          git show origin/main:scripts/push.sh > "$RUNNER_TEMP/push.sh"
           set +e
-          bash scripts/push.sh "agent ${ROLE} : session du $(date -u +%F\ %H:%M)" --guard
+          bash "$RUNNER_TEMP/push.sh" "agent ${ROLE} : session du $(date -u +%F\ %H:%M)" --guard
           code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
           [ "$code" = "3" ] && exit 0
