@@ -19,7 +19,7 @@ jobs:
   collect:
     if: ${{ vars.COLLECTOR_ENABLED == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120      # le premier passage des données complémentaires recharge leur historique
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,3 +58,46 @@ jobs:
         run: python -m collector.run export-panel
       - name: Contrôle qualité du panel
         run: python -m collector.run check-panel
+
+      # Données complémentaires (collector/extra.py). Placées après la collecte quotidienne et tolérantes à
+      # l'échec, pour qu'un défaut ici ne bloque jamais les barres ; la dernière étape rend l'échec visible.
+      # Chaque commande reprend là où elle s'est arrêtée (le premier passage recharge l'historique).
+      - name: Actions sur titres (splits, dividendes, fusions)
+        id: x_corporate
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+        run: python -m collector.run corporate-actions
+      - name: Photo des actifs (statut d'emprunt du jour)
+        id: x_assets
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+        run: python -m collector.run assets-snapshot
+      - name: Barres minute hors séance
+        id: x_minute
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+          ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+        run: python -m collector.run minute-bars
+      - name: Transactions d'initiés (jeux trimestriels de la SEC)
+        id: x_insiders
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: python -m collector.run insiders
+      - name: Libération des données complémentaires
+        id: x_release
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: python -m collector.run release-extra
+      - name: Échec d'une collecte complémentaire
+        if: ${{ steps.x_corporate.outcome == 'failure' || steps.x_assets.outcome == 'failure' || steps.x_minute.outcome == 'failure' || steps.x_insiders.outcome == 'failure' || steps.x_release.outcome == 'failure' }}
+        run: |
+          echo "Une collecte complémentaire a échoué : voir les étapes précédentes. Les barres quotidiennes ne sont pas concernées."
+          exit 1
